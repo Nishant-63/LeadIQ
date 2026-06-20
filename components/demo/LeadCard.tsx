@@ -1,6 +1,6 @@
 'use client';
 
-import { Phone, Calendar, MessageCircle } from 'lucide-react';
+import { Phone, Calendar, MessageCircle, DollarSign, CalendarDays } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export interface LeadCardData {
@@ -52,11 +52,13 @@ export default function LeadCard({ lead, onToast }: LeadCardProps) {
           <span className="bg-gray-100 text-gray-600 text-[10px] font-medium px-2 py-0.5 rounded-full">
             {lead.source}
           </span>
-          <span className="bg-gray-100 text-gray-600 text-[10px] font-medium px-2 py-0.5 rounded-full">
-            💰 {lead.budget}
+          <span className="flex items-center gap-1 bg-gray-100 text-gray-600 text-[10px] font-medium px-2 py-0.5 rounded-full">
+            <DollarSign size={9} className="text-gray-400" />
+            {lead.budget}
           </span>
-          <span className="bg-gray-100 text-gray-600 text-[10px] font-medium px-2 py-0.5 rounded-full">
-            📅 {lead.timeline}
+          <span className="flex items-center gap-1 bg-gray-100 text-gray-600 text-[10px] font-medium px-2 py-0.5 rounded-full">
+            <CalendarDays size={9} className="text-gray-400" />
+            {lead.timeline}
           </span>
         </div>
       </div>

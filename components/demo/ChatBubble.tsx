@@ -1,5 +1,7 @@
 'use client';
 
+import { User } from 'lucide-react';
+
 interface TypingIndicatorProps {
   show: boolean;
 }
@@ -48,7 +50,10 @@ export default function ChatBubble({ role, content, timestamp, isAgent }: ChatBu
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-2`}>
       <div className={`max-w-[78%] flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
         {isAgent && !isUser && (
-          <span className="text-[10px] text-gray-400 mb-1 px-1">👤 Agent</span>
+          <span className="flex items-center gap-1 text-[10px] text-gray-400 mb-1 px-1">
+            <User size={10} />
+            Agent
+          </span>
         )}
         <div
           className={`px-4 py-2.5 shadow-sm ${

@@ -3,7 +3,16 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { storage } from '@/lib/storage';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import {
+  CheckCircle,
+  Loader2,
+  CalendarDays,
+  Clock,
+  User,
+  Phone,
+  DollarSign,
+  Zap,
+} from 'lucide-react';
 
 const MORNING_SLOTS = ['10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM'];
 const AFTERNOON_SLOTS = ['2:00 PM', '2:30 PM', '3:00 PM', '4:00 PM', '4:30 PM'];
@@ -132,29 +141,44 @@ export default function BookPage() {
           {/* Animated checkmark */}
           <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
             <AnimatedCheck />
-            <h1 className="text-2xl font-bold text-gray-900 mt-4">Appointment Confirmed! 🎉</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mt-4">Appointment Confirmed!</h1>
             <p className="text-gray-500 text-sm mt-1">The client has been notified.</p>
 
             {/* Booking details */}
             <div className="bg-gray-50 rounded-xl p-4 mt-5 text-left space-y-2.5">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">📅 Date</span>
+              <div className="flex justify-between items-center text-sm">
+                <span className="flex items-center gap-1.5 text-gray-500">
+                  <CalendarDays size={14} className="text-gray-400" />
+                  Date
+                </span>
                 <span className="font-semibold text-gray-900">{formatDate(selectedDate)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">⏰ Time</span>
+              <div className="flex justify-between items-center text-sm">
+                <span className="flex items-center gap-1.5 text-gray-500">
+                  <Clock size={14} className="text-gray-400" />
+                  Time
+                </span>
                 <span className="font-semibold text-gray-900">{selectedSlot}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">👤 Client</span>
+              <div className="flex justify-between items-center text-sm">
+                <span className="flex items-center gap-1.5 text-gray-500">
+                  <User size={14} className="text-gray-400" />
+                  Client
+                </span>
                 <span className="font-semibold text-gray-900">{lead.name}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">📞 Phone</span>
+              <div className="flex justify-between items-center text-sm">
+                <span className="flex items-center gap-1.5 text-gray-500">
+                  <Phone size={14} className="text-gray-400" />
+                  Phone
+                </span>
                 <span className="font-semibold text-gray-900">{maskedPhone}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">💰 Budget</span>
+              <div className="flex justify-between items-center text-sm">
+                <span className="flex items-center gap-1.5 text-gray-500">
+                  <DollarSign size={14} className="text-gray-400" />
+                  Budget
+                </span>
                 <span className="font-semibold text-gray-900">{budget}</span>
               </div>
             </div>
@@ -243,8 +267,9 @@ export default function BookPage() {
           <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-gray-700">Choose a Time</h2>
-              <span className="text-xs text-amber-600 font-medium bg-amber-50 px-2 py-1 rounded-full">
-                ⚡ Slots fill up fast
+              <span className="flex items-center gap-1 text-xs text-amber-600 font-medium bg-amber-50 px-2 py-1 rounded-full">
+                <Zap size={11} />
+                Slots fill up fast
               </span>
             </div>
 
@@ -290,14 +315,14 @@ export default function BookPage() {
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Appointment Preview</h2>
             <div className="space-y-2.5">
               {[
-                { icon: '📅', label: formatDate(selectedDate) },
-                { icon: '⏰', label: selectedSlot },
-                { icon: '👤', label: lead?.name ?? 'Lead' },
-                { icon: '📞', label: maskedPhone },
-                { icon: '💰', label: `Budget: ${budget}` },
-              ].map(({ icon, label }) => (
+                { Icon: CalendarDays, label: formatDate(selectedDate) },
+                { Icon: Clock,        label: selectedSlot },
+                { Icon: User,         label: lead?.name ?? 'Lead' },
+                { Icon: Phone,        label: maskedPhone },
+                { Icon: DollarSign,   label: `Budget: ${budget}` },
+              ].map(({ Icon, label }) => (
                 <div key={label} className="flex items-center gap-3 text-sm">
-                  <span>{icon}</span>
+                  <Icon size={14} className="text-gray-400 flex-shrink-0" />
                   <span className="font-medium text-gray-800">{label}</span>
                 </div>
               ))}
@@ -318,7 +343,7 @@ export default function BookPage() {
                 Booking...
               </>
             ) : (
-              'Confirm Appointment ✓'
+              'Confirm Appointment'
             )}
           </button>
         )}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Flame, Thermometer, Snowflake } from 'lucide-react';
 
 interface ScoreCircleProps {
   score: number;
@@ -8,22 +9,39 @@ interface ScoreCircleProps {
   animate?: boolean;
 }
 
+// Semantic tier colors per spec
 const TIER_COLORS = {
-  hot: '#ef4444',
-  warm: '#f59e0b',
-  cold: '#3b82f6',
+  hot: '#639922',   // was red — spec mandates green for 70-100
+  warm: '#BA7517',  // amber for 40-69
+  cold: '#A32D2D',  // red for 0-39
 };
 
-const TIER_LABELS = {
-  hot: '🔥 HOT LEAD',
-  warm: '♨️ WARM LEAD',
-  cold: '❄️ COLD LEAD',
-};
+// Resolve correct arc color based on score threshold (not just tier label)
+function getArcColor(score: number): string {
+  if (score >= 70) return '#639922';
+  if (score >= 40) return '#BA7517';
+  return '#A32D2D';
+}
 
-const TIER_BG = {
-  hot: 'bg-red-500',
-  warm: 'bg-amber-500',
-  cold: 'bg-blue-500',
+const TIER_BADGE = {
+  hot: {
+    Icon: Flame,
+    label: 'Hot',
+    bg: '#FAEEDA',
+    color: '#854F0B',
+  },
+  warm: {
+    Icon: Thermometer,
+    label: 'Warm',
+    bg: '#E6F1FB',
+    color: '#185FA5',
+  },
+  cold: {
+    Icon: Snowflake,
+    label: 'Cold',
+    bg: '#EAF3DE',
+    color: '#3B6D11',
+  },
 };
 
 export default function ScoreCircle({ score, tier, animate = true }: ScoreCircleProps) {
@@ -59,10 +77,13 @@ export default function ScoreCircle({ score, tier, animate = true }: ScoreCircle
     return () => clearInterval(timer);
   }, [score, animate]);
 
-  const color = TIER_COLORS[tier];
+  const arcColor = getArcColor(score);
+  const badge = TIER_BADGE[tier];
+  const BadgeIcon = badge.Icon;
 
   return (
     <div className="flex flex-col items-center gap-4">
+      {/* Score ring */}
       <div className="relative">
         <svg width="180" height="180" viewBox="0 0 180 180" className="-rotate-90">
           {/* Background ring */}
@@ -72,7 +93,7 @@ export default function ScoreCircle({ score, tier, animate = true }: ScoreCircle
             r={radius}
             fill="none"
             stroke="#e5e7eb"
-            strokeWidth="12"
+            strokeWidth="10"
           />
           {/* Progress ring */}
           <circle
@@ -80,8 +101,8 @@ export default function ScoreCircle({ score, tier, animate = true }: ScoreCircle
             cy="90"
             r={radius}
             fill="none"
-            stroke={color}
-            strokeWidth="12"
+            stroke={arcColor}
+            strokeWidth="10"
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
@@ -89,26 +110,29 @@ export default function ScoreCircle({ score, tier, animate = true }: ScoreCircle
           />
         </svg>
 
-        {/* Score number in center */}
+        {/* Score number + label in center */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span
-            className="text-5xl font-bold tabular-nums"
-            style={{ color }}
+            style={{ fontSize: '32px', fontWeight: 500, color: arcColor, lineHeight: 1 }}
           >
             {displayScore}
           </span>
-          <span className="text-sm text-gray-400 font-medium">/ 100</span>
+          <span style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
+            Lead score
+          </span>
         </div>
       </div>
 
-      {/* Tier badge */}
+      {/* Tier badge — no emojis, Lucide icons only */}
       <div
         className={`transition-all duration-500 ${showBadge ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}
       >
         <span
-          className={`inline-block ${TIER_BG[tier]} text-white text-sm font-bold px-5 py-2 rounded-full shadow-lg tracking-wide`}
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium"
+          style={{ backgroundColor: badge.bg, color: badge.color }}
         >
-          {TIER_LABELS[tier]}
+          <BadgeIcon size={13} />
+          {badge.label}
         </span>
       </div>
     </div>

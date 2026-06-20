@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { storage } from '@/lib/storage';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Lock } from 'lucide-react';
 
 export default function DemoPage() {
   const router = useRouter();
@@ -62,7 +62,7 @@ export default function DemoPage() {
               <div className="absolute -bottom-12 -left-8 w-52 h-52 rounded-full bg-white/5" />
             </div>
             <p className="relative text-blue-200 text-xs font-medium tracking-widest uppercase mb-1">
-              🏙️ Tricity&apos;s Most Trusted
+              Tricity&apos;s Most Trusted
             </p>
             <h2 className="relative text-white text-xl font-bold leading-tight">
               Property Advisor
@@ -108,7 +108,7 @@ export default function DemoPage() {
                 </label>
                 <div className="flex gap-2">
                   <div className="flex items-center border border-gray-200 rounded-xl px-3 bg-gray-50 text-sm text-gray-600 font-medium">
-                    🇮🇳 +91
+                    +91
                   </div>
                   <input
                     type="tel"
@@ -160,8 +160,9 @@ export default function DemoPage() {
               </button>
             </form>
 
-            <p className="text-center text-xs text-gray-400 mt-4">
-              🔒 Your details are 100% safe and confidential
+            <p className="text-center text-xs text-gray-400 mt-4 flex items-center justify-center gap-1">
+              <Lock size={11} className="text-gray-400" />
+              Your details are 100% safe and confidential
             </p>
           </div>
         </div>

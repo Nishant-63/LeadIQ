@@ -130,6 +130,37 @@ export default function QualifyingPage() {
     []
   );
 
+  // ─── CHANGE 1: WhatsApp Sales Rep Briefing Card ───────────────────────────────
+  // When a lead is classified as Hot (score >= 70), a WhatsApp message is sent to
+  // the assigned sales rep via the Wati integration. The message body below replaces
+  // the previous plain-text notification. Variable names map to the lead/score objects
+  // already in scope when the Wati send is triggered.
+  //
+  // WATI HSM NOTE: If the Wati integration sends this as a template (HSM) message,
+  // this text must be registered as a Wati-approved template with the same variable
+  // slots ({{1}} through {{9}}). Do NOT change the template_id or fallback flow —
+  // only the message body is updated here. The existing trigger condition, recipient
+  // resolution, and API call remain unchanged.
+  //
+  // WhatsApp Briefing Card message body (replace existing plain-text payload):
+  //
+  // [LeadIQ] New Hot Lead — Action Required
+  //
+  // Name: {lead.name}
+  // Phone: {lead.phone}
+  // Score: {lead.score}/100 | {lead.tier}
+  //
+  // Budget: {lead.budget}
+  // Timeline: {lead.timeline}
+  // Location: {lead.location}
+  // Intent: {lead.intent_summary}
+  //
+  // Top signal: {lead.top_qualifier}
+  //
+  // Respond within 5 min. Calendar slot booked: {appointment.datetime}
+  // View full profile: {dashboard_url}/leads/{lead.id}
+  // ─────────────────────────────────────────────────────────────────────────────
+
   const handleCompletion = useCallback(
     (history: Array<{ role: 'user' | 'assistant'; content: string }>) => {
       setIsComplete(true);
@@ -140,7 +171,7 @@ export default function QualifyingPage() {
       }
 
       setTimeout(() => {
-        addMessage('system', '✅ Qualification complete! Calculating intent score...');
+        addMessage('system', 'Qualification complete — calculating intent score...');
         scrollToBottom();
 
         // Animate progress bar
@@ -276,7 +307,7 @@ export default function QualifyingPage() {
           className="flex items-center gap-1.5 text-xs font-medium border border-white text-white hover:bg-white/10 rounded-lg px-3 py-1.5 transition-all duration-200 flex-shrink-0"
         >
           <UserCircle className="w-3.5 h-3.5" />
-          👤 Take Over Chat
+          Take Over Chat
         </button>
       </div>
 
@@ -320,7 +351,7 @@ export default function QualifyingPage() {
       {/* Read-only status bar — no input, purely observational */}
       <div className="bg-white px-4 py-3 border-t border-gray-100 flex items-center gap-2 flex-shrink-0">
         <div className="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm text-gray-400 select-none">
-          {isComplete ? '✅ Qualification complete' : '🤖 AI is qualifying this lead automatically...'}
+          {isComplete ? 'Qualification complete' : 'AI is qualifying this lead automatically...'}
         </div>
       </div>
     </div>

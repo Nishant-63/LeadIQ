@@ -1,5 +1,15 @@
 'use client';
 
+import {
+  CheckCircle2,
+  CalendarDays,
+  MessageSquare,
+  Flame,
+  BarChart2,
+  Bot,
+  User,
+  Circle,
+} from 'lucide-react';
 import { ActivityEntry } from '@/lib/demo-data';
 
 interface ActivityFeedProps {
@@ -12,6 +22,21 @@ function formatTimeAgo(minutesAgo: number): string {
   if (minutesAgo < 60) return `${minutesAgo} min ago`;
   const h = Math.floor(minutesAgo / 60);
   return `${h}h ago`;
+}
+
+// Map dot key strings to Lucide icon components (16px inline)
+function DotIcon({ dot }: { dot: string }) {
+  const cls = 'w-3 h-3 flex-shrink-0';
+  switch (dot) {
+    case 'check':    return <CheckCircle2 className={cls} />;
+    case 'calendar': return <CalendarDays className={cls} />;
+    case 'message':  return <MessageSquare className={cls} />;
+    case 'flame':    return <Flame className={cls} />;
+    case 'chart':    return <BarChart2 className={cls} />;
+    case 'bot':      return <Bot className={cls} />;
+    case 'user':     return <User className={cls} />;
+    default:         return <Circle className={cls} />;
+  }
 }
 
 export default function ActivityFeed({ entries }: ActivityFeedProps) {
@@ -32,10 +57,12 @@ export default function ActivityFeed({ entries }: ActivityFeedProps) {
             )}
           </div>
 
-          {/* Text + time */}
+          {/* Icon + text + time */}
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-gray-700 leading-snug">
-              <span className="mr-1">{entry.dot}</span>
+            <p className="flex items-start gap-1.5 text-xs text-gray-700 leading-snug">
+              <span className="text-gray-400 mt-0.5">
+                <DotIcon dot={entry.dot} />
+              </span>
               {entry.text}
             </p>
           </div>
