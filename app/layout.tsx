@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "LeadIQ — AI Lead Qualification for Real Estate",
-  description: "AI-powered lead qualification for real estate brokers in Tricity (Chandigarh, Mohali, Panchkula). Qualify leads instantly via WhatsApp.",
+  title: "LeadIQ — AI Lead Qualification for Audi Dealerships",
+  description: "AI-powered lead qualification for Audi dealerships. Qualify buyers instantly via WhatsApp — score, brief, and hand off hot leads in seconds.",
 };
 
 export default function RootLayout({

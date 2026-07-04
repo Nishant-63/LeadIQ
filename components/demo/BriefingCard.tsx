@@ -36,9 +36,9 @@ export default function BriefingCard({ name, briefing, onClose }: BriefingCardPr
             Lead Summary
           </p>
           <SummaryRow label="Budget" value={briefing.budget} />
-          <SummaryRow label="Property" value={briefing.property} />
+          <SummaryRow label="Model Interest" value={briefing.property} />
           <SummaryRow label="Timeline" value={briefing.timeline} />
-          <SummaryRow label="Loan Status" value={briefing.loanStatus} />
+          <SummaryRow label="Financing" value={briefing.loanStatus} />
         </div>
 
         {/* Intent Signals */}

@@ -1,14 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import BriefingCard from '@/components/demo/BriefingCard';
 import { storage } from '@/lib/storage';
+import { getVerticalConfig } from '@/lib/verticals';
 import {
-  HOT_LEADS,
-  WARM_LEADS,
-  COLD_LEADS,
-  MOCK_ACTIVITY,
   DemoLead,
   ActivityEntry,
   HandoffStatus,
@@ -339,10 +337,14 @@ function ActivityFeedLocal({ entries }: { entries: ActivityEntry[] }) {
 }
 
 
-// ─── Dashboard Page ────────────────────────────────────────────────────────────
+// ─── Inner Dashboard (uses useSearchParams, must be inside Suspense) ───────────
 
-export default function DashboardPage() {
+function DashboardInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const config = getVerticalConfig(searchParams);
+
+  const { hotLeads: configHotLeads, warmLeads, coldLeads } = config.sampleLeads;
 
   // State from localStorage (qualifying flow)
   const [demoLead, setDemoLead] = useState<ReturnType<typeof storage.getLead>>(null);
@@ -358,7 +360,7 @@ export default function DashboardPage() {
   const [toast, setToast] = useState('');
 
   // Live-looking activity feed (prepend dynamic entries)
-  const [feedEntries, setFeedEntries] = useState<ActivityEntry[]>(MOCK_ACTIVITY);
+  const [feedEntries, setFeedEntries] = useState<ActivityEntry[]>(config.activityFeed);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -373,6 +375,12 @@ export default function DashboardPage() {
     setDemoScore(storage.getScore());
     setLoaded(true);
   }, []);
+
+  // Sync feed entries when vertical changes (e.g. param changes without full reload)
+  useEffect(() => {
+    setFeedEntries(config.activityFeed);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.verticalName]);
 
   // Build hot leads list: inject demo lead from qualifying flow first (if hot)
   const hotLeads: DemoLead[] = [];
@@ -390,7 +398,7 @@ export default function DashboardPage() {
       handoffStatus: 'ai',
     });
   }
-  HOT_LEADS.forEach((l) => hotLeads.push(l));
+  configHotLeads.forEach((l) => hotLeads.push(l));
 
   // Stats
   const totalLeads = 38;
@@ -479,7 +487,7 @@ export default function DashboardPage() {
               Lead Dashboard
             </h1>
             <p className="text-sm text-gray-400 mt-0.5">
-              Real-time AI qualification · Tricity Region
+              {config.dashboardSubtitle}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -554,11 +562,11 @@ export default function DashboardPage() {
                 <Thermometer className="w-4 h-4 text-amber-500" />
                 <h2 className="text-sm font-bold text-gray-900">Warm Leads</h2>
                 <span className="bg-amber-100 text-amber-600 text-xs font-bold px-2 py-0.5 rounded-full">
-                  {WARM_LEADS.length}
+                  {warmLeads.length}
                 </span>
               </div>
               <div className="px-4 py-2">
-                {WARM_LEADS.map((lead) => (
+                {warmLeads.map((lead) => (
                   <WarmColdRow key={lead.id} lead={lead} />
                 ))}
               </div>
@@ -570,11 +578,11 @@ export default function DashboardPage() {
                 <Snowflake className="w-4 h-4 text-blue-400" />
                 <h2 className="text-sm font-bold text-gray-900">Cold Leads</h2>
                 <span className="bg-gray-200 text-gray-500 text-xs font-bold px-2 py-0.5 rounded-full">
-                  {COLD_LEADS.length}
+                  {coldLeads.length}
                 </span>
               </div>
               <div className="px-4 py-2">
-                {COLD_LEADS.map((lead) => (
+                {coldLeads.map((lead) => (
                   <WarmColdRow key={lead.id} lead={lead} />
                 ))}
               </div>
@@ -626,5 +634,21 @@ export default function DashboardPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+// ─── Dashboard Page ─────────────────────────────────────────────────────────────
+// Wrapped in Suspense as required by Next.js when using useSearchParams in
+// a statically pre-renderable route (prevents build-time bailout errors).
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[calc(100vh-48px)] bg-gray-50 flex items-center justify-center">
+        <div className="text-sm text-gray-400">Loading dashboard...</div>
+      </div>
+    }>
+      <DashboardInner />
+    </Suspense>
   );
 }

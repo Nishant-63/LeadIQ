@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import ScoreCircle from '@/components/demo/ScoreCircle';
 import { storage } from '@/lib/storage';
 import { TIER_CONFIG } from '@/lib/scoring';
+import { getVerticalConfig } from '@/lib/verticals';
 import {
   ArrowRight,
   LayoutDashboard,
@@ -12,7 +14,6 @@ import {
   DollarSign,
   Clock,
   Target,
-  MapPin,
   Megaphone,
 } from 'lucide-react';
 
@@ -60,20 +61,26 @@ const DEMO_SCORE = {
   },
 };
 
-// Profile field rows — each with a Lucide icon, muted label, primary value
-const PROFILE_FIELDS = [
-  { Icon: DollarSign, label: 'Budget', key: 0 },
-  { Icon: Clock, label: 'Timeline', key: 1 },
-  { Icon: MapPin, label: 'Location', key: 2 },
-  { Icon: Target, label: 'Property Type', key: 3 },
-  { Icon: Target, label: 'Intent Signal', key: 4 },
-];
-
 // Breakdown bar field names — no emojis
 const BREAKDOWN_LABELS = ['Budget', 'Timeline', 'Area Match', 'Intent Signal'];
 
-export default function ResultPage() {
+// ─── Inner Result Page (uses useSearchParams) ──────────────────────────────────
+
+function ResultInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const config = getVerticalConfig(searchParams);
+
+  // Read ?v= at click-time from window.location (reliable on client, never stale)
+  const getV = () =>
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('v')
+      : null;
+  const withV = (path: string) => {
+    const v = getV();
+    return v ? `${path}?v=${v}` : path;
+  };
+
   const [lead, setLead] = useState<ReturnType<typeof storage.getLead>>(null);
   const [loaded, setLoaded] = useState(false);
   const [toast, setToast] = useState('');
@@ -94,18 +101,13 @@ export default function ResultPage() {
     const existing = storage.getQualified();
     if (!existing?.answers?.length) {
       storage.setQualified({
-        answers: [
-          'Around 1 crore',
-          'Within 3 months',
-          'Mohali',
-          'Residential, ready-to-move',
-          'Yes, visited a few projects already',
-        ],
+        answers: config.demoAnswers,
         conversationHistory: [],
       });
     }
 
     setTimeout(() => setLoaded(true), 100);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const scoreData = DEMO_SCORE;
@@ -114,13 +116,7 @@ export default function ResultPage() {
     ? `98XXXXX${lead.phone.slice(-3)}`
     : '98XXXXXXX';
 
-  const answers = storage.getQualified()?.answers ?? [
-    'Around 1 crore',
-    'Within 3 months',
-    'Mohali',
-    'Residential, ready-to-move',
-    'Yes, visited a few projects already',
-  ];
+  const answers = storage.getQualified()?.answers ?? config.demoAnswers;
 
   // Score breakdown bars — no emojis, clean labels
   const bars: BreakdownBar[] = [
@@ -154,36 +150,6 @@ export default function ResultPage() {
           <ScoreCircle score={scoreData.total} tier={scoreData.tier} animate={loaded} />
         </div>
 
-        {/* ── Qualification Breakdown ─────────────────────────────────────── */}
-        <div
-          className="bg-white rounded-xl p-5"
-          style={{ border: '0.5px solid #e5e7eb' }}
-        >
-          {/* Section heading per spec: 11px uppercase tracking-widest muted */}
-          <p className="text-[11px] uppercase tracking-widest text-gray-400 font-medium mb-3">
-            Qualification breakdown
-          </p>
-
-          {/* Rows: icon + label + value, divide-y */}
-          <div className="divide-y divide-gray-100">
-            {[
-              { Icon: DollarSign, label: 'Budget', value: answers[0] || '—' },
-              { Icon: Clock,      label: 'Timeline', value: answers[1] || '—' },
-              { Icon: MapPin,     label: 'Location', value: answers[2] || '—' },
-              { Icon: Target,     label: 'Property Type', value: answers[3] || '—' },
-              { Icon: Target,     label: 'Intent Signal', value: answers[4] || '—' },
-            ].map(({ Icon, label, value }) => (
-              <div key={label} className="flex items-center justify-between gap-4 py-2.5">
-                <span className="flex items-center gap-2 text-[13px] text-gray-500 flex-shrink-0">
-                  <Icon size={16} className="text-gray-400" />
-                  {label}
-                </span>
-                <span className="text-[13px] font-medium text-gray-900 text-right">{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Score breakdown bars */}
         <div
           className="bg-white rounded-xl p-5"
@@ -214,7 +180,7 @@ export default function ResultPage() {
               <p className="text-sm text-gray-500">{maskedPhone}</p>
               <span className="inline-flex items-center gap-1.5 mt-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                 <Megaphone size={11} className="text-gray-400" />
-                Facebook Ad — Mohali 3BHK Campaign
+                {config.leadSource}
               </span>
             </div>
           </div>
@@ -222,25 +188,69 @@ export default function ResultPage() {
 
         {/* Action buttons */}
         <div className="space-y-3">
-          {/* Always show Book Appointment for HOT (score is always 94) */}
+          {/* Always show View Dashboard for HOT (score is always 94) */}
           <button
-            onClick={() => router.push('/demo/book')}
+            onClick={() => router.push(withV('/demo/dashboard'))}
             className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md"
           >
-            <Calendar size={16} />
-            Book Appointment
+            <LayoutDashboard className="w-4 h-4" />
+            View Dashboard
             <ArrowRight className="w-4 h-4" />
           </button>
 
           <button
-            onClick={() => router.push('/demo/dashboard')}
+            onClick={() => router.push('/demo/book')}
             className="w-full border border-gray-200 hover:border-gray-300 text-gray-700 font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 hover:bg-gray-50"
           >
-            <LayoutDashboard className="w-4 h-4" />
-            View Dashboard
+            <Calendar size={16} />
+            Book Appointment
           </button>
+        </div>
+
+        {/* ── Qualification Breakdown ─────────────────────────────────────── */}
+        <div
+          className="bg-white rounded-xl p-5"
+          style={{ border: '0.5px solid #e5e7eb' }}
+        >
+          {/* Section heading per spec: 11px uppercase tracking-widest muted */}
+          <p className="text-[11px] uppercase tracking-widest text-gray-400 font-medium mb-3">
+            Qualification breakdown
+          </p>
+
+          {/* Rows: icon + label + value, divide-y */}
+          <div className="divide-y divide-gray-100">
+            {[
+              { Icon: DollarSign, label: 'Budget', value: answers[0] || '—' },
+              { Icon: Clock,      label: 'Financing Type', value: answers[1] || '—' },
+              { Icon: Target,     label: 'Vehicle Type', value: answers[2] || '—' },
+              { Icon: Clock,      label: 'Timeline', value: answers[3] || '—' },
+              { Icon: Target,     label: 'Showroom Visits', value: answers[4] || '—' },
+            ].map(({ Icon, label, value }) => (
+              <div key={label} className="flex items-center justify-between gap-4 py-2.5">
+                <span className="flex items-center gap-2 text-[13px] text-gray-500 flex-shrink-0">
+                  <Icon size={16} className="text-gray-400" />
+                  {label}
+                </span>
+                <span className="text-[13px] font-medium text-gray-900 text-right">{value}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Result Page ───────────────────────────────────────────────────────────────
+
+export default function ResultPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[calc(100vh-48px)] flex items-center justify-center">
+        <div className="text-sm text-gray-400">Loading...</div>
+      </div>
+    }>
+      <ResultInner />
+    </Suspense>
   );
 }

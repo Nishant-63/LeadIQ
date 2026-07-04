@@ -229,7 +229,7 @@ export default function BookPage() {
             {lead?.name ? ` — ${lead.name}` : ''}
           </h1>
           <p className="text-gray-500 text-sm mt-1">
-            Select a date and time for your property consultation.
+            Select a date and time for your test drive or showroom appointment.
           </p>
         </div>
 

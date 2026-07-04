@@ -1,12 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { storage } from '@/lib/storage';
+import { getVerticalConfig } from '@/lib/verticals';
 import { Loader2, Lock } from 'lucide-react';
 
-export default function DemoPage() {
+// ─── Inner Demo Page (uses useSearchParams) ────────────────────────────────────
+
+function DemoInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const config = getVerticalConfig(searchParams);
+
+  // Read ?v= at click-time from window.location (reliable on client, never stale)
+  const getV = () =>
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('v')
+      : null;
+  const withV = (path: string) => {
+    const v = getV();
+    return v ? `${path}?v=${v}` : path;
+  };
+
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -32,12 +49,19 @@ export default function DemoPage() {
       name: name.trim(),
       phone: phone.trim(),
       email: email.trim() || undefined,
-      source: 'Facebook Ad — Mohali 3BHK Campaign',
+      source: config.leadSource,
     });
 
     await new Promise((r) => setTimeout(r, 1500));
-    router.push('/demo/qualifying');
+    router.push(withV('/demo/qualifying'));
   };
+
+  // Vertical-specific banner copy — read directly from URL at render time
+  // Default (no param or any param other than ?v=re) = Audi automotive
+  const isAuto =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('v') !== 're'
+      : searchParams.get('v') !== 're';
 
   return (
     <div className="min-h-[calc(100vh-48px)] flex items-center justify-center p-4">
@@ -53,7 +77,9 @@ export default function DemoPage() {
           <div
             className="relative h-36 flex flex-col items-center justify-center text-center px-6"
             style={{
-              background: 'linear-gradient(135deg, #1e1b4b 0%, #1d4ed8 100%)',
+              background: isAuto
+                ? 'linear-gradient(135deg, #0a0a0a 0%, #222 60%, #b8860b 100%)'
+                : 'linear-gradient(135deg, #1e1b4b 0%, #1d4ed8 100%)',
             }}
           >
             {/* Subtle overlay circles */}
@@ -62,20 +88,22 @@ export default function DemoPage() {
               <div className="absolute -bottom-12 -left-8 w-52 h-52 rounded-full bg-white/5" />
             </div>
             <p className="relative text-blue-200 text-xs font-medium tracking-widest uppercase mb-1">
-              Tricity&apos;s Most Trusted
+              {isAuto ? 'Chandigarh\'s Premium' : 'Tricity\'s Most Trusted'}
             </p>
             <h2 className="relative text-white text-xl font-bold leading-tight">
-              Property Advisor
+              {isAuto ? 'Audi Dealership' : 'Property Advisor'}
             </h2>
             <p className="relative text-blue-100 text-xs mt-1.5">
-              Chandigarh · Mohali · Panchkula
+              {isAuto ? 'Chandigarh · Mohali · Punjab' : 'Chandigarh · Mohali · Panchkula'}
             </p>
           </div>
 
           {/* Form */}
           <div className="p-6">
             <h1 className="text-gray-900 text-lg font-bold mb-1">
-              Interested in Premium Properties in Tricity?
+              {isAuto
+                ? 'Interested in a Premium Audi?'
+                : 'Interested in Premium Properties in Tricity?'}
             </h1>
             <p className="text-gray-500 text-sm mb-5">
               Fill in your details and our advisor will reach out shortly.
@@ -154,7 +182,7 @@ export default function DemoPage() {
                   </>
                 ) : (
                   <>
-                    Get Free Consultation →
+                    {isAuto ? 'Book a Test Drive →' : 'Get Free Consultation →'}
                   </>
                 )}
               </button>
@@ -169,22 +197,57 @@ export default function DemoPage() {
 
         {/* Trust badges */}
         <div className="flex items-center justify-center gap-6 mt-5">
-          <div className="text-center">
-            <p className="text-gray-900 text-base font-bold">500+</p>
-            <p className="text-gray-400 text-xs">Happy Clients</p>
-          </div>
-          <div className="w-px h-8 bg-gray-200" />
-          <div className="text-center">
-            <p className="text-gray-900 text-base font-bold">₹250 Cr+</p>
-            <p className="text-gray-400 text-xs">Properties Sold</p>
-          </div>
-          <div className="w-px h-8 bg-gray-200" />
-          <div className="text-center">
-            <p className="text-gray-900 text-base font-bold">15 Yrs</p>
-            <p className="text-gray-400 text-xs">Experience</p>
-          </div>
+          {isAuto ? (
+            <>
+              <div className="text-center">
+                <p className="text-gray-900 text-base font-bold">300+</p>
+                <p className="text-gray-400 text-xs">Cars Delivered</p>
+              </div>
+              <div className="w-px h-8 bg-gray-200" />
+              <div className="text-center">
+                <p className="text-gray-900 text-base font-bold">₹500Cr+</p>
+                <p className="text-gray-400 text-xs">Cars Sold</p>
+              </div>
+              <div className="w-px h-8 bg-gray-200" />
+              <div className="text-center">
+                <p className="text-gray-900 text-base font-bold">10 Yrs</p>
+                <p className="text-gray-400 text-xs">Audi Partner</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-center">
+                <p className="text-gray-900 text-base font-bold">500+</p>
+                <p className="text-gray-400 text-xs">Happy Clients</p>
+              </div>
+              <div className="w-px h-8 bg-gray-200" />
+              <div className="text-center">
+                <p className="text-gray-900 text-base font-bold">₹250 Cr+</p>
+                <p className="text-gray-400 text-xs">Properties Sold</p>
+              </div>
+              <div className="w-px h-8 bg-gray-200" />
+              <div className="text-center">
+                <p className="text-gray-900 text-base font-bold">15 Yrs</p>
+                <p className="text-gray-400 text-xs">Experience</p>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Demo Landing Page ─────────────────────────────────────────────────────────
+
+export default function DemoPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[calc(100vh-48px)] flex items-center justify-center">
+        <div className="text-sm text-gray-400">Loading...</div>
+      </div>
+    }>
+      <DemoInner />
+    </Suspense>
   );
 }

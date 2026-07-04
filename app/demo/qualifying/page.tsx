@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { UserCircle } from 'lucide-react';
 import ChatBubble, { TypingIndicator } from '@/components/demo/ChatBubble';
 import { storage } from '@/lib/storage';
+import { getVerticalConfig } from '@/lib/verticals';
 
 interface Message {
   id: string;
@@ -22,79 +24,23 @@ function getTime(): string {
   return `${h}:${m} ${ampm}`;
 }
 
-// The scripted demo conversation — no API needed
-const buildScript = (leadName: string) => [
-  {
-    role: 'assistant' as const,
-    content: `Hello ${leadName}! 👋\n\nI'm the AI assistant for Premium Tricity Properties.\n\nI have a few quick questions to help our team find the perfect property for you. It'll only take 2 minutes.`,
-  },
-  {
-    role: 'assistant' as const,
-    content: 'What is your approximate budget?',
-  },
-  {
-    role: 'user' as const,
-    content: 'Around 1 crore',
-  },
-  {
-    role: 'assistant' as const,
-    content: 'Thank you. That gives us a good starting point.\n\nWhen are you looking to buy?',
-  },
-  {
-    role: 'user' as const,
-    content: 'Within 3 months',
-  },
-  {
-    role: 'assistant' as const,
-    content: 'Perfect.\n\nWhich area are you primarily interested in?',
-  },
-  {
-    role: 'user' as const,
-    content: 'Mohali',
-  },
-  {
-    role: 'assistant' as const,
-    content: 'Great choice.\n\nAre you looking for residential or commercial property? Ready-to-move or under construction?',
-  },
-  {
-    role: 'user' as const,
-    content: 'Residential, ready-to-move',
-  },
-  {
-    role: 'assistant' as const,
-    content: 'Understood.\n\nHave you already visited any sites or spoken to other builders?',
-  },
-  {
-    role: 'user' as const,
-    content: 'Yes, visited a few projects already',
-  },
-  {
-    role: 'assistant' as const,
-    content:
-      'Excellent.\n\nThank you for sharing these details.\n\nOur property advisor will review your requirements and contact you shortly with suitable options.',
-    isLast: true,
-  },
-];
+// ─── Inner Qualifying Page (uses useSearchParams) ─────────────────────────────
 
-// Qualification data to store at completion
-const DEMO_QUALIFIED_DATA = {
-  budget: 'Around 1 crore',
-  timeline: 'Within 3 months',
-  location: 'Mohali',
-  propertyType: 'Residential, ready-to-move',
-  intent: 'Yes, visited a few projects already',
-};
-
-const DEMO_ANSWERS = [
-  'Around 1 crore',
-  'Within 3 months',
-  'Mohali',
-  'Residential, ready-to-move',
-  'Yes, visited a few projects already',
-];
-
-export default function QualifyingPage() {
+function QualifyingInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const config = getVerticalConfig(searchParams);
+
+  // Build the scripted conversation by replacing {{name}} placeholder
+  const buildScript = useCallback(
+    (leadName: string) =>
+      config.demoScript.map((entry) => ({
+        ...entry,
+        content: entry.content.replace('{{name}}', leadName),
+      })),
+    [config]
+  );
+
   const [lead, setLead] = useState<ReturnType<typeof storage.getLead>>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -130,44 +76,16 @@ export default function QualifyingPage() {
     []
   );
 
-  // ─── CHANGE 1: WhatsApp Sales Rep Briefing Card ───────────────────────────────
-  // When a lead is classified as Hot (score >= 70), a WhatsApp message is sent to
-  // the assigned sales rep via the Wati integration. The message body below replaces
-  // the previous plain-text notification. Variable names map to the lead/score objects
-  // already in scope when the Wati send is triggered.
-  //
-  // WATI HSM NOTE: If the Wati integration sends this as a template (HSM) message,
-  // this text must be registered as a Wati-approved template with the same variable
-  // slots ({{1}} through {{9}}). Do NOT change the template_id or fallback flow —
-  // only the message body is updated here. The existing trigger condition, recipient
-  // resolution, and API call remain unchanged.
-  //
-  // WhatsApp Briefing Card message body (replace existing plain-text payload):
-  //
-  // [LeadIQ] New Hot Lead — Action Required
-  //
-  // Name: {lead.name}
-  // Phone: {lead.phone}
-  // Score: {lead.score}/100 | {lead.tier}
-  //
-  // Budget: {lead.budget}
-  // Timeline: {lead.timeline}
-  // Location: {lead.location}
-  // Intent: {lead.intent_summary}
-  //
-  // Top signal: {lead.top_qualifier}
-  //
-  // Respond within 5 min. Calendar slot booked: {appointment.datetime}
-  // View full profile: {dashboard_url}/leads/{lead.id}
-  // ─────────────────────────────────────────────────────────────────────────────
-
   const handleCompletion = useCallback(
     (history: Array<{ role: 'user' | 'assistant'; content: string }>) => {
       setIsComplete(true);
 
-      // Store qualification data to localStorage as specified
+      // Store qualification data to localStorage
       if (typeof window !== 'undefined') {
-        localStorage.setItem('leadiq_demo_qualified_detail', JSON.stringify(DEMO_QUALIFIED_DATA));
+        localStorage.setItem(
+          'leadiq_demo_qualified_detail',
+          JSON.stringify(config.demoQualifiedData)
+        );
       }
 
       setTimeout(() => {
@@ -183,13 +101,13 @@ export default function QualifyingPage() {
             clearInterval(interval);
             // Store using storage helpers
             storage.setConversation(history);
-            storage.setQualified({ answers: DEMO_ANSWERS, conversationHistory: history });
+            storage.setQualified({ answers: config.demoAnswers, conversationHistory: history });
             setTimeout(() => router.push('/demo/result'), 500);
           }
         }, 40);
       }, 1500);
     },
-    [addMessage, router, scrollToBottom]
+    [addMessage, router, scrollToBottom, config]
   );
 
   // Auto-playback the scripted conversation
@@ -209,7 +127,7 @@ export default function QualifyingPage() {
 
     let delay = 1000; // First message appears after 1s
 
-    const scheduleEntry = (entry: (typeof script)[number], index: number) => {
+    const scheduleEntry = (entry: (typeof script)[number]) => {
       if (entry.role === 'assistant') {
         // Show typing indicator 1.2s before AI message
         setTimeout(() => {
@@ -242,7 +160,7 @@ export default function QualifyingPage() {
       }
     };
 
-    script.forEach((entry, i) => scheduleEntry(entry, i));
+    script.forEach((entry) => scheduleEntry(entry));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -311,6 +229,13 @@ export default function QualifyingPage() {
         </button>
       </div>
 
+      {/* AI context banner */}
+      <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex-shrink-0">
+        <p className="text-xs text-amber-800 font-medium text-center">
+          LeadIQ AI is qualifying this lead automatically. Your sales rep doesn&apos;t need to do anything.
+        </p>
+      </div>
+
       {/* Chat area */}
       <div
         className="flex-1 overflow-y-auto px-4 py-4"
@@ -355,5 +280,21 @@ export default function QualifyingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Qualifying Page ───────────────────────────────────────────────────────────
+// Wrapped in Suspense as required by Next.js for useSearchParams in
+// statically pre-renderable routes.
+
+export default function QualifyingPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[calc(100vh-48px)]">
+        <div className="text-sm text-gray-400">Loading...</div>
+      </div>
+    }>
+      <QualifyingInner />
+    </Suspense>
   );
 }
